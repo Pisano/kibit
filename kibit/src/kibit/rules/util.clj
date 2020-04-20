@@ -4,15 +4,16 @@
 
 (defn compile-rule [rule]
   (let [[pat alt] (unifier/prep rule)]
-     [(fn [expr] (logic/== expr pat))
-      (fn [sbst] (logic/== sbst alt))]))
+    [(fn [expr] (logic/== expr pat))
+     (fn [sbst] (logic/== sbst alt))]))
 
 (defn raw-rule? [rule]
   (not (vector? rule)))
 
 (defmacro defrules [name & rules]
   `(let [rules# (for [rule# '~rules]
-                  (if (raw-rule? rule#)
-                    (eval rule#) ;; raw rule, no need to compile
-                    (compile-rule rule#)))]
+                  {:form     rule#
+                   :compiled (if (raw-rule? rule#)
+                               (eval rule#)                 ;; raw rule, no need to compile
+                               (compile-rule rule#))})]
      (def ~name (vec rules#))))

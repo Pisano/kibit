@@ -3,6 +3,7 @@
   linting a list of files."
   (:require [clojure.java.io :as io]
             [clojure.tools.cli :refer [cli]]
+            [clojure.edn :as edn]
             [kibit
              [check :refer [check-file]]
              [replace :refer [replace-file]]
@@ -41,26 +42,72 @@
   (sort-by #(.getAbsolutePath ^File %)
            (filter clojure-file? (file-seq dir))))
 
+(declare read-edn-file)
+
+(defn- opts [^java.io.File cfg-file]
+  {:readers
+   {'include
+    (fn [file]
+      (let [f (io/file (.getParent cfg-file) file)]
+        (if (.exists f)
+          (read-edn-file f)
+          (binding [*out* *err*]
+            (println "WARNING: included file" (.getCanonicalPath f) "does not exist.")))))}})
+
+(defn- read-edn-file [^java.io.File f]
+  (try (edn/read-string (opts f) (slurp f))
+       (catch Exception e
+         (binding [*out* *err*]
+           (println "WARNING: error while reading"
+                    (.getCanonicalPath f) (format "(%s)" (.getMessage e)))))))
+
+(defn- config-dir
+  ([] (config-dir
+        (io/file
+          (System/getProperty "user.dir"))))
+  ([cwd]
+   (loop [dir (io/file cwd)]
+     (let [cfg-dir (io/file dir ".kibit")]
+       (if (.exists cfg-dir)
+         (if (.isDirectory cfg-dir)
+           cfg-dir
+           (throw (Exception. (str cfg-dir " must be a directory"))))
+         (when-let [parent (.getParentFile dir)]
+           (recur parent)))))))
+
+(defn- get-config-map
+  []
+  (let [cfg-dir    (config-dir (io/file (System/getProperty "user.dir")))]
+    (let [f (io/file cfg-dir "config.edn")]
+      (when (.exists f)
+        (read-edn-file f)))))
+
 (defn- run-replace [source-files rules options]
-  (doseq [file source-files]
-    (replace-file file
-                  :rules (or rules all-rules)
-                  :interactive (:interactive options))))
+  (let [config-map (get-config-map)]
+    (doseq [file source-files]
+     (replace-file file
+                   :rules (or rules all-rules)
+                   :interactive (:interactive options)
+                   :exclusions (:exclusions config-map)
+                   :custom (:custom config-map)))))
 
 (defn- run-check [source-files rules {:keys [reporter]}]
-  (mapcat (fn [file] (try (check-file file
-                                      :reporter (name-to-reporter reporter
-                                                                  cli-reporter)
-                                      :rules (or rules all-rules))
-                          (catch Exception e
-                            (let [e-info (ex-data e)]
-                              (binding [*out* *err*]
-                                (println (format "Check failed -- skipping rest of file (%s:%s:%s)"
-                                                 (.getPath ^File file)
-                                                 (:line e-info)
-                                                 (:column e-info)))
-                                (println (.getMessage e)))))))
-          source-files))
+  (let [config-map (get-config-map)]
+    (mapcat (fn [file] (try (check-file file
+                                        :reporter (name-to-reporter reporter
+                                                                    cli-reporter)
+                                        :rules (or rules all-rules)
+                                        :exclusions (:exclusions config-map)
+                                        :custom (:custom config-map))
+                            (catch Exception e
+                              (let [e-info (ex-data e)]
+                                (binding [*out* *err*]
+                                  (println (format "Check failed -- skipping rest of file (%s:%s:%s)"
+                                                   (.getPath file)
+                                                   (:line e-info)
+                                                   (:column e-info)))
+                                  (println (.getMessage e)))))))
+            source-files)))
 
 (defn run [source-paths rules & args]
   "Runs the kibit checker against the given paths, rules and args.
@@ -72,8 +119,8 @@
   Optionally accepts a :reporter keyword argument, defaulting to \"text\"
   If :replace is provided in options, suggested replacements will be performed automatically."
   (let [[options file-args usage-text] (apply (partial cli args) cli-specs)
-        source-files                   (mapcat #(-> % io/file find-clojure-sources-in-dir)
-                                               (if (empty? file-args) source-paths file-args))]
+        source-files (mapcat #(-> % io/file find-clojure-sources-in-dir)
+                             (if (empty? file-args) source-paths file-args))]
     (if (:replace options)
       (run-replace source-files rules options)
       (run-check source-files rules options))))
