@@ -1,7 +1,23 @@
 [![Build Status](https://travis-ci.org/jonase/kibit.svg?branch=master)](https://travis-ci.org/jonase/kibit)
 [![Dependencies Status](http://jarkeeper.com/jonase/kibit/status.svg)](http://jarkeeper.com/jonase/kibit)
 
-# kibit
+# kibit (Configurable)
+
+Please create a directory in your project called `.kibit` and create a config map called `config.edn` in **.kibit** directory.
+Here is the sample (.kibit/config.edn):
+
+```clojure
+{:exclusions [
+              [(< ?x 0) (neg? ?x)]
+              [(> 0 ?x) (neg? ?x)]
+              [(< 0 ?x)  (pos? ?x)]
+              [(> ?x 0)  (pos? ?x)]
+              ]
+ :custom [
+          ;You can write custom rules here, please check: https://github.com/Pisano/kibit/tree/master/kibit/src/kibit/rules
+          [(>>> ?x) (heyy! ?x)]
+          ]}
+```
 
 *There's a function for that!*
 
