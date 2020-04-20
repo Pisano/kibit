@@ -11,10 +11,7 @@
   (let [src-paths     (get-in project [:kibit :source-paths] ["rules"])
         repositories (:repositories project)
         local-repo    (:local-repo project)
-        kibit-project `{:dependencies [[jonase/kibit ~(str/trim-newline
-                                                        (slurp
-                                                          (io/resource
-                                                            "jonase/kibit/VERSION")))]]
+        kibit-project `{:dependencies [[pisano/kibit "0.1.0"]]
                         :source-paths ~src-paths
                         :repositories ~repositories
                         :local-repo   ~local-repo}
