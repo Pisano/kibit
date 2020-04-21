@@ -77,7 +77,7 @@
 
 (defn- get-config-map
   []
-  (let [cfg-dir    (config-dir (io/file (System/getProperty "user.dir")))]
+  (let [cfg-dir (config-dir (io/file (System/getProperty "user.dir")))]
     (let [f (io/file cfg-dir "config.edn")]
       (when (.exists f)
         (read-edn-file f)))))
@@ -85,29 +85,33 @@
 (defn- run-replace [source-files rules options]
   (let [config-map (get-config-map)]
     (doseq [file source-files]
-     (replace-file file
-                   :rules (or rules all-rules)
-                   :interactive (:interactive options)
-                   :exclusions (:exclusions config-map)
-                   :custom (:custom config-map)))))
+      (try
+        (replace-file file
+                      :rules (or rules all-rules)
+                      :interactive (:interactive options)
+                      :exclusions (:exclusions config-map)
+                      :custom (:custom config-map))
+        (catch Exception e
+          (println "Replace failed, file: " (.getCanonicalPath file) "\nError: " (.getMessage e)))))))
 
 (defn- run-check [source-files rules {:keys [reporter]}]
-  (let [config-map (get-config-map)]
-    (mapcat (fn [file] (try (check-file file
-                                        :reporter (name-to-reporter reporter
-                                                                    cli-reporter)
-                                        :rules (or rules all-rules)
-                                        :exclusions (:exclusions config-map)
-                                        :custom (:custom config-map))
-                            (catch Exception e
-                              (let [e-info (ex-data e)]
-                                (binding [*out* *err*]
-                                  (println (format "Check failed -- skipping rest of file (%s:%s:%s)"
-                                                   (.getPath file)
-                                                   (:line e-info)
-                                                   (:column e-info)))
-                                  (println (.getMessage e)))))))
-            source-files)))
+  (let [config-map (get-config-map)
+        iter       (if (> (count source-files) 1) #(apply concat (pmap %1 %2)) mapcat)]
+    (iter (fn [file] (try (check-file file
+                                      :reporter (name-to-reporter reporter
+                                                                  cli-reporter)
+                                      :rules (or rules all-rules)
+                                      :exclusions (:exclusions config-map)
+                                      :custom (:custom config-map))
+                          (catch Exception e
+                            (let [e-info (ex-data e)]
+                              (binding [*out* *err*]
+                                (println (format "Check failed -- skipping rest of file (%s:%s:%s)"
+                                                 (.getPath file)
+                                                 (:line e-info)
+                                                 (:column e-info)))
+                                (println (.getMessage e)))))))
+      source-files)))
 
 (defn run [source-paths rules & args]
   "Runs the kibit checker against the given paths, rules and args.
