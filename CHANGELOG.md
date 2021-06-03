@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+## [0.1.10] / 2021-06-03
+
+### Changed
+
+* Dramatically decraese check times by only checking lists and lazy seqs.
+
 ## [0.1.8] / 2019-11-18
 
 ### Fixed

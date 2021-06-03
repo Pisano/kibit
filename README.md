@@ -41,7 +41,7 @@ it will suggest using `when` instead:
 
 ## Usage
 
-Add `[lein-kibit "0.1.8"]` to your `:plugins` vector in your `:user` profile. Then you can run
+Add `[pisano/lein-kibit "0.1.10"]` to your `:plugins` vector in your `:user` profile. Then you can run
 
     $ lein kibit
 
