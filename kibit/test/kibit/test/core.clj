@@ -9,7 +9,7 @@
 
 (deftest simplify-alts
   (are [expected-alt test-expr]
-       (= expected-alt (core/simplify test-expr all-rules) (:alt (kibit/check-expr test-expr)))
+       (= expected-alt (core/simplify test-expr (kibit/apply-config-map-opts all-rules nil nil)) (:alt (kibit/check-expr test-expr)))
     [1 2 3]           '(do [1 2 3])
     []                '(do [])
     "Hello"           '(do "Hello")

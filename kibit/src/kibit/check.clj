@@ -163,7 +163,7 @@
   (with-monkeypatches kibit-redefs
                       (->> expr simplify-fn (build-simplify-map expr) guard)))
 
-(defn- apply-config-map-opts
+(defn apply-config-map-opts
   [rules exclusions custom]
   (->> rules
        (concat (for [c custom]
