@@ -1,6 +1,6 @@
-(defproject pisano/kibit "0.1.1"
+(defproject co.pisano/kibit "0.1.10"
   :description "There's a function for that!"
-  :url "https://github.com/jonase/kibit"
+  :url "https://github.com/pisano/kibit"
   :license {:name         "Eclipse Public License - v 1.0"
             :url          "http://www.eclipse.org/legal/epl-v10.html"
             :distribution :repo

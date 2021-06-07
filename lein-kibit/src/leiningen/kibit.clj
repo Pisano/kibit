@@ -11,7 +11,7 @@
   (let [src-paths     (get-in project [:kibit :source-paths] ["rules"])
         repositories (:repositories project)
         local-repo    (:local-repo project)
-        kibit-project `{:dependencies [[pisano/kibit "0.1.1"]]
+        kibit-project `{:dependencies [[co.pisano/kibit "0.1.10"]]
                         :source-paths ~src-paths
                         :repositories ~repositories
                         :local-repo   ~local-repo}
